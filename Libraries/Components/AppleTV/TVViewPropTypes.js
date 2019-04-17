@@ -16,6 +16,8 @@ var PropTypes = require('prop-types');
  * Additional View properties for Apple TV
  */
 var TVViewPropTypes = {
+    catchTVFocusFromParent: PropTypes.number,
+    passTVFocusToChildren: PropTypes.number,
     /**
      * *(Apple TV only)* When set to true, this view will be focusable
      * and navigable using the Apple TV remote.

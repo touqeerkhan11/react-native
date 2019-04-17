@@ -108,6 +108,8 @@ var TouchableHighlight = createReactClass({
      * @platform ios
      */
     tvParallaxProperties: PropTypes.object,
+
+    catchTVFocusFromParent: PropTypes.bool,
   },
 
   mixins: [NativeMethodsMixin, TimerMixin, Touchable.Mixin],
@@ -287,6 +289,7 @@ var TouchableHighlight = createReactClass({
         isTVSelectable={true}
         tvParallaxProperties={this.props.tvParallaxProperties}
         hasTVPreferredFocus={this.state.hasTVPreferredFocus}
+        catchTVFocusFromParent={this.props.catchTVFocusFromParent}
         onStartShouldSetResponder={this.touchableHandleStartShouldSetResponder}
         onResponderTerminationRequest={this.touchableHandleResponderTerminationRequest}
         onResponderGrant={this.touchableHandleResponderGrant}
