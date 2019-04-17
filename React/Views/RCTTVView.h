@@ -30,4 +30,9 @@
  */
 @property (nonatomic, assign) BOOL hasTVPreferredFocus;
 
+
+@property (nonatomic, assign) int passTVFocusToChildren;
+
+@property (nonatomic, assign) int catchTVFocusFromParent;
+
 @end
