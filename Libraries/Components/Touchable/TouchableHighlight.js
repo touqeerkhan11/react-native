@@ -273,8 +273,18 @@ var TouchableHighlight = createReactClass({
   },
 
   render: function() {
+    let utilityProps = {}
+    if (this.props.catchTVFocusFromParent) {
+      utilityProps = {
+        catchTVFocusFromParent: this.props.catchTVFocusFromParent
+      }
+    }
+
     return (
       <View
+        /*❤ catchTVFocusFromParent should only be passed if it is provided ❤*/
+        {...utilityProps}
+        /*❤ catchTVFocusFromParent should only be passed if it is provided ❤*/
         accessible={this.props.accessible !== false}
         /* $FlowFixMe(>=0.53.0 site=react_native_fb,react_native_oss) This
          * comment suppresses an error when upgrading Flow's support for React.
@@ -289,7 +299,6 @@ var TouchableHighlight = createReactClass({
         isTVSelectable={true}
         tvParallaxProperties={this.props.tvParallaxProperties}
         hasTVPreferredFocus={this.state.hasTVPreferredFocus}
-        catchTVFocusFromParent={this.props.catchTVFocusFromParent}
         onStartShouldSetResponder={this.touchableHandleStartShouldSetResponder}
         onResponderTerminationRequest={this.touchableHandleResponderTerminationRequest}
         onResponderGrant={this.touchableHandleResponderGrant}
