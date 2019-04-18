@@ -28,7 +28,7 @@
  */
 #if TARGET_OS_TV
 @property (nonatomic, strong) RCTTVRemoteHandler *tvRemoteHandler;
-@property (nonatomic, strong) UIView *reactPreferredFocusedView;
+@property (nonatomic, strong) NSArray<id<UIFocusEnvironment>> *reactPreferredFocusedView;
 #endif
 
 - (void)contentViewInvalidated;

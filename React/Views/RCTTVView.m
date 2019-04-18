@@ -69,6 +69,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:unused)
   if (_isChildFocused) {
     return NO;
   }
+  
   return YES;
 }
 
@@ -77,6 +78,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:unused)
   if (_isChildFocused) {
     return NO;
   }
+  
   return (self.isTVSelectable);
 }
 
@@ -149,19 +151,18 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:unused)
 
 - (BOOL)shouldUpdateFocusInContext:(UIFocusUpdateContext *)context
 {
-  NSLog(@"❤️next view: %ld", (long)context.nextFocusedView.tag);
-  NSLog(@"❤️prev view: %ld", (long)context.previouslyFocusedView.tag);
-  
-  if (context.nextFocusedView == self && self.isTVSelectable) {
+  if (context.nextFocusedView == self && self.isTVSelectable) { // focus event
     
-    if (_passTVFocusToChildren) {
-      UIView *childView = [self viewWithTag:_passTVFocusToChildren];
+    
+    if (_passTVFocusToChildren) { // parent getting focused
       
-      if (childView.tag == _passTVFocusToChildren) {
+      if (!_isChildFocused) { // child is not focused so lets focus it
         
-        if (childView.tag == context.previouslyFocusedView.tag) {
-          _isChildFocused = NO;
+        UIView *childView = [self viewWithTag:_passTVFocusToChildren];
+        
+        if (childView.tag == _passTVFocusToChildren) { // if the tag matches we have our child that needs to be focused
           
+          // so lets focus that child
           UIView *rootview = self;
           while (![rootview isReactRootView] && rootview != nil) {
             rootview = [rootview superview];
@@ -170,47 +171,49 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:unused)
           
           rootview = [rootview superview];
           
-          [(RCTRootView *)rootview setReactPreferredFocusedView:childView];
+          [(RCTRootView *)rootview setReactPreferredFocusedView:@[childView, context.nextFocusedView, context.previouslyFocusedView]];
           [rootview setNeedsFocusUpdate];
           [rootview updateFocusIfNeeded];
+          
+          // and set the flag on parent that says the child is focused so dont let me receive focus next time
+          _isChildFocused = YES;
+          
+          return YES;
+          
+        } else { // children can be other views we dont want to focus so lets not focus on them
           
           return NO;
         }
         
-        UIView *rootview = self;
-        while (![rootview isReactRootView] && rootview != nil) {
-          rootview = [rootview superview];
-        }
-        if (rootview == nil) return YES;
+      } else { // child is focused parent should not be receiving focus at all
         
-        rootview = [rootview superview];
-        
-        [(RCTRootView *)rootview setReactPreferredFocusedView:childView];
-        [rootview setNeedsFocusUpdate];
-        [rootview updateFocusIfNeeded];
-        
-        _isChildFocused = YES;
-        
-        return YES;
-      } else {
-        return YES;
       }
-      
-      //      NSLog(@"😈😈 passing focus %ld", (long)childView.tag);
-      
-      //      [self resignFirstResponder];
-      //      [childView becomeFirstResponder];
-      
-      //        [childView focusItemContainer];
-    } else {
-      _isChildFocused = NO;
-      return YES;
+    } else if (_catchTVFocusFromParent) { // focusing children directly we should not allow it
+      return NO;
     }
-  } else {
-    _isChildFocused = NO;
+    
+    // focusing non parent/children views
+    
+    UIView *rootview = self;
+    while (![rootview isReactRootView] && rootview != nil) {
+      rootview = [rootview superview];
+    }
+    if (rootview == nil) return YES;
+    
+    rootview = [rootview superview];
+    
+    [(RCTRootView *)rootview setReactPreferredFocusedView:@[context.nextFocusedView, context.previouslyFocusedView]];
+    
+    [rootview setNeedsFocusUpdate];
+    [rootview updateFocusIfNeeded];
+    
     return YES;
+    
+  } else { // blur event
+    _isChildFocused = NO;
   }
   
+  return YES;
   
 }
 
@@ -224,23 +227,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:unused)
       }
       [[NSNotificationCenter defaultCenter] postNotificationName:RCTTVNavigationEventNotification
                                                           object:@{@"eventType":@"focus",@"tag":self.reactTag}];
-    } completion:^(void){
-      
-      //      NSLog(@"😈 parent: %d, child: %d", _passTVFocusToChildren, _catchTVFocusFromParent);
-      //
-      //      if (_passTVFocusToChildren) {
-      //
-      //        UIView *childView = [self viewWithTag:_passTVFocusToChildren];
-      //
-      //        NSLog(@"😈😈 passing focus %ld", (long)childView.tag);
-      //
-      ////        [childView shouldUpdateFocusInContext:context];
-      ////        [self resignFirstResponder];
-      ////        [childView becomeFirstResponder];
-      //
-      ////        [childView focusItemContainer];
-      //      }
-    }];
+    } completion:^(void){}];
   } else {
     [coordinator addCoordinatedAnimations:^(void){
       [[NSNotificationCenter defaultCenter] postNotificationName:RCTTVNavigationEventNotification
@@ -270,7 +257,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:unused)
       
       rootview = [rootview superview];
       
-      [(RCTRootView *)rootview setReactPreferredFocusedView:self];
+      [(RCTRootView *)rootview setReactPreferredFocusedView:@[self]];
       [rootview setNeedsFocusUpdate];
       [rootview updateFocusIfNeeded];
     });
@@ -279,23 +266,16 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:unused)
 
 - (void)setPassTVFocusToChildren: (int) passTVFocusToChildren
 {
+  // store the child tag name to be able to find child and also to mark this view as a parent
   _passTVFocusToChildren = passTVFocusToChildren;
-  
-  //  NSLog(@"😈 setting parent %d", _passTVFocusToChildren);
-  
-  //  _parent = _passTVFocusToChildren;
-  //  _passTVFocusToChildren = 786;
 }
 
 - (void)setCatchTVFocusFromParent: (int) catchTVFocusFromParent
 {
   _catchTVFocusFromParent = catchTVFocusFromParent;
   
-  //  _child = catchTVFocusFromParent;
-  
   if (_catchTVFocusFromParent) {
-    //    NSLog(@"😈 setting child %d", _catchTVFocusFromParent);
-    
+    // tag the child that will receive focus and mark this view as a child
     self.tag = _catchTVFocusFromParent;
   }
   
